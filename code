@@ -1,0 +1,203 @@
+
+from pygame import *
+from random import *
+
+font.init()
+mixer.init()
+
+wigth = 700
+heidht = 500
+fps = 60
+font1 = font.SysFont('Arial', 36)
+font2 = font.SysFont('Arial', 20)
+font3 = font.SysFont('Arial', 36)
+
+
+img_p = 'rocket.png'
+img_bg1 = 'bg22.png'
+img_ball = 'ball3.png'
+
+window = display.set_mode((wigth, heidht))
+display.set_caption('pin-pong')
+background = transform.scale(image.load(img_bg1), (wigth, heidht))
+clock = time.Clock()
+
+
+class GameSprite(sprite.Sprite):
+    def __init__(self, p_img: str, x: int, y: int, w: int, h: int, speed: int):
+        super().__init__()
+        self.image = transform.scale(image.load(p_img), (w, h))
+        self.rect = self.image.get_rect() 
+        self.rect.x = x 
+        self.rect.y = y
+        self.speed = speed
+
+    def reset(self):
+        window.blit(self.image, (self.rect.x, self.rect.y))
+
+
+class Player1(GameSprite):
+    def update(self):
+        keys = key.get_pressed()
+
+        if keys[K_w] and self.rect.y >= 0:
+            self.rect.y -= self.speed
+
+        if keys[K_s] and self.rect.y <= 360:
+            self.rect.y += self.speed
+
+
+class Player2(GameSprite):
+    def update(self):
+        keys = key.get_pressed()
+
+        if keys[K_UP] and self.rect.y >= 0:
+            self.rect.y -= self.speed
+
+        if keys[K_DOWN] and self.rect.y <= 360:
+            self.rect.y += self.speed
+
+
+class Ball(GameSprite):
+    def __init__(self,p_img: str, x: int, y: int, w: int, h: int):
+        self.image = transform.scale(image.load(p_img), (w, h))
+        self.rect = self.image.get_rect() 
+        self.rect.x = x 
+        self.rect.y = y  
+
+
+def restart():
+    global finish, num, speedx, speedy
+
+    finish = False
+    speedx = 4
+    speedy = 4
+    racket1.rect.y = 180
+    racket2.rect.y = 180
+    ball1.rect.y = 250
+    ball1.rect.x = 350
+    num = randint(1,4)
+
+
+def full_restart_game():
+    global finish, num, speedx, speedy, win_left_racket, win_right_racket
+
+    finish = False
+    speedx = 4
+    speedy = 4
+    racket1.rect.y = 180
+    racket2.rect.y = 180
+    ball1.rect.y = 250
+    ball1.rect.x = 350
+    num = randint(1,4)
+    win_left_racket = 0
+    win_right_racket = 0
+    
+
+racket1 = Player1(img_p, 30, 180, 40, 140, 4)
+racket2 = Player2(img_p, 630, 180, 40, 140, 4)
+ball1 = Ball(img_ball, 350, 250, 30, 30)
+
+run = True
+finish = False
+
+speedy = 4
+speedx = 4
+
+win_left_racket = 0
+win_right_racket = 0
+
+text_win_left_racket = font1.render('LEFT RACKET WIN', 1, (0, 255, 0))
+text_win_right_racket = font1.render('RIGHT RACKET WIN', 1, (0, 255, 0))
+text_restart_game = font2.render('Please press R to start the game again', 1, ( 0, 0, 0))
+text_space = font3.render('press the space bar', 1, (0, 0, 0))
+
+num = randint(1,4)
+
+while run:
+    for e in event.get():
+        if e.type == QUIT:
+            run = False
+
+        elif e.type ==  KEYDOWN:
+            if e.key == K_SPACE and finish == True:
+                restart()
+
+            elif e.key == K_r and finish == True and win_left_racket == 5 or win_right_racket == 5:
+                full_restart_game()
+
+    if not finish:
+
+        window.blit(background, (0,0))
+
+        counter1 = font2.render(str(win_left_racket) + ':' + str(win_right_racket), 1, ( 0, 0, 0))
+        window.blit(counter1, (340, 20))
+
+
+        if num == 1:
+            ball1.rect.x += speedx
+            ball1.rect.y += speedy
+
+        elif num == 2:
+            ball1.rect.x -= speedx
+            ball1.rect.y += speedy
+
+        elif num == 3:
+            ball1.rect.x -= speedx
+            ball1.rect.y -= speedy
+
+        elif num == 4:
+            ball1.rect.x += speedx
+            ball1.rect.y -= speedy
+
+
+        if ball1.rect.y > 470 or ball1.rect.y < 0:
+            speedy *= -1
+
+        if ball1.rect.x > 670 or ball1.rect.x < 0:
+            speedx *= 0 
+            speedy *= 0
+
+
+        racket1.reset()
+        racket2.reset()
+        ball1.reset()
+
+        racket2.update()
+        racket1.update()
+
+
+        if sprite.collide_rect(racket2, ball1):
+            speedx *= -1
+
+        elif sprite.collide_rect(racket1, ball1):
+            speedx *= -1
+
+
+        if ball1.rect.x < 0:
+            win_right_racket += 1
+            finish = True
+            if win_right_racket <= 4:
+                window.blit(text_space, (180, 60))
+
+        elif ball1.rect.x > 670:
+            win_left_racket += 1
+            finish = True
+            if win_left_racket <= 4:
+                window.blit(text_space, (180, 60))
+        
+
+        if win_left_racket == 5:
+            finish = True
+            if win_right_racket <= 4:
+                window.blit(text_win_left_racket, (180, 60))
+                window.blit(text_restart_game, (180, 90))
+
+        elif win_right_racket == 5:
+            finish = True
+            window.blit(text_win_right_racket, (180, 60))
+            window.blit(text_restart_game, (180, 90))
+
+
+    display.update()
+    clock.tick(fps)
